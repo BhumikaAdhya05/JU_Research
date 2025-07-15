@@ -27,6 +27,31 @@ In real-world medical imaging scenarios, annotated data is scarce. This project 
 
 ---
 
+---
+
+## 🔧 Model Design Strategy: Implementing PANet from Scratch
+
+This project implements **PANet (Prototype Alignment Network) from scratch**, tailored for **grayscale breast ultrasound tumor segmentation** using few-shot learning.
+
+While we use pretrained backbones (e.g., ResNet-50 or VGG) for feature extraction, the **core PANet logic is entirely custom-built** to support 1-shot and 5-shot semantic segmentation.
+
+### 🔨 Components Built from Scratch:
+
+| Component                | Description                                             | Built From Scratch? |
+|-------------------------|---------------------------------------------------------|----------------------|
+| **Data Loader**          | Episodic support-query sampling for few-shot learning   | ✅ Yes               |
+| **Preprocessing**        | Normalization, resizing, grayscale handling             | ✅ Yes               |
+| **Prototype Computation**| Averages support features to form class representations | ✅ Yes               |
+| **Similarity Module**    | Cosine similarity or inner product matching             | ✅ Yes               |
+| **Segmentation Head**    | Decoder for similarity map → segmentation mask          | ✅ Yes               |
+| **Training Loop**        | Episodic training with few-shot tasks                   | ✅ Yes               |
+| **Evaluation Metrics**   | Dice, IoU, Accuracy, Precision, Recall                  | ✅ Yes               |
+| **Feature Encoder**      | CNN (e.g., ResNet-50 or ViT, optionally pretrained)     | 🟡 Partially         |
+
+This design ensures **maximum flexibility**, supports custom datasets like BUS-UCLM, and makes the system **fully transparent for research and reproducibility**.
+
+---
+
 ## 🧠 Methodology
 
 ### ✅ Model: PANet (Prototype Alignment Network)
