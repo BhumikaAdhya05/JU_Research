@@ -164,4 +164,162 @@ year={2024},
 publisher={IEEE}
 }
 ```
+# 🧠 What’s This Paper About?
+
+Medical image segmentation means drawing outlines around organs or diseased regions (like lung infections) in medical scans like CT or X-rays.
+
+This is usually done with deep learning models (like U-Net), but those models need a lot of labeled images—and labeling medical images is:
+
+- 🕒 Time-consuming  
+- 🧠 Requires expert doctors  
+- 💸 Very expensive
+
+---
+
+## 💡 The Core Idea
+
+The authors noticed that:
+
+> Medical images often come with written text reports (e.g., "infection in lower right lung").
+
+These free-text annotations are:
+
+- Already available (no extra cost)
+- Created by doctors
+- Helpful in identifying **where** the problem is
+
+So... why not use the **text + image together** to improve segmentation?
+
+---
+
+## 🚀 Introducing: LViT
+
+**LViT** stands for **Language meets Vision Transformer**.
+
+It’s a new AI model that:
+
+- Takes **both medical images and their text reports** as input
+- Combines them using a **hybrid architecture (CNN + Transformer)**
+- Works well even with **few labeled images**, thanks to smart **pseudo-labels**
+
+---
+
+## 🧱 Architecture in Simple Terms
+
+Think of LViT like a two-path highway:
+
+- 🛣️ **Image Path** – Processes image using CNN (focuses on local details)
+- 🛣️ **Multimodal Path** – Processes image + text using Transformer (captures global context)
+
+They **meet at checkpoints**, exchange information, and cooperate to produce better segmentation.
+
+---
+
+## 🧩 Key Components (Explained Simply)
+
+### 1. 🔡 Text Embedding Layer
+
+- Instead of using a heavy language model, it uses a **lightweight embedding layer**
+- Turns text into numbers
+- Fast & resource-efficient
+
+### 2. 🎯 PLAM (Pixel-Level Attention Module)
+
+- Helps the CNN **focus on small, fuzzy regions** (like early infections)
+- Uses:
+  - **GAP** (Global Average Pooling)
+  - **GMP** (Global Max Pooling)
+- Combines spatial & channel-wise info
+
+### 3. 🔁 EPI (Exponential Pseudo-label Iteration)
+
+- Trains on **unlabeled data** using **smart guesses**
+- Refines pseudo-labels **over time** with **Exponential Moving Average**
+- Prevents bad pseudo-labels from derailing training
+
+🧠 *Analogy*: Blends multiple earlier guesses into a smart average instead of trusting one blindly
+
+### 4. 🧠 LV Loss (Language-Vision Loss)
+
+- Uses **text reports** to guide training
+- Checks if predicted mask aligns with text using **cosine similarity**
+- If mismatch → high loss → model learns to fix it
+
+---
+
+## 📊 Datasets Used
+
+| Dataset       | Type | Description                              |
+|---------------|------|------------------------------------------|
+| MosMedData+   | CT   | COVID-19 lung infection (CT)             |
+| QaTa-COV19    | X-ray| COVID-19 X-rays + expert text            |
+| ESO-CT        | CT   | Esophageal cancer + location annotations |
+
+Each includes **segmentation masks** + **text reports**
+
+---
+
+## ✅ Results in a Nutshell
+
+### Fully Supervised:
+
+LViT **outperforms** U-Net, TransUNet, nnUNet.
+
+### Semi-Supervised (25% labeled data):
+
+Still **beats most fully supervised models** 🤯
+
+### Generalization:
+
+- On new datasets like **ESO-CT**, LViT **still excels**
+- Shows model is **robust and adaptable**
+
+---
+
+## 🔍 Interpretability (Why It Works)
+
+Used **GradCAM** to visualize model focus:
+
+- 🧠 Traditional models: Sometimes looked at wrong areas
+- 💡 LViT: Focused on the right spots, thanks to **text guidance**
+
+---
+
+## 🛠️ Technical Setup
+
+- **Framework**: PyTorch
+- **Optimizer**: Adam
+- **Loss**:
+  - Supervised → Dice + CrossEntropy
+  - Unsupervised → Dice + CE + LV Loss
+- **Training Tricks**:
+  - Early stopping
+  - Smart learning schedules
+
+---
+
+## 🧪 Ablation Studies
+
+| Component         | Benefit                                 |
+|------------------|------------------------------------------|
+| Text Input        | Big boost in segmentation accuracy       |
+| PLAM              | Retains important local details          |
+| EPI               | Improves pseudo-label quality            |
+| LV Loss           | Helps train on unlabeled data            |
+| Embedding Layer   | Faster & lighter than full text encoder  |
+
+---
+
+## 🔮 Future Plans
+
+- Extend from **2D → 3D segmentation**
+- **Auto-generate text** from images → No manual reports needed
+- Make **text input optional** during inference
+
+---
+
+## 🎯 In One Sentence
+
+**LViT is a smart AI model that combines medical images and doctor-written text to boost segmentation accuracy—especially when labeled data is scarce.**
+
 
