@@ -62,7 +62,9 @@ Challenges in medical image segmentation:
 ### 🔹 EPI (Exponential Pseudo-Label Iteration)
 - Pseudo labels are updated as:
 
-`L_{LV} = 1 - \cos(x_{\text{img}, p}, x_{\text{img}, c})`
+$$
+L_{LV} = 1 - \cos(x_{\text{img}, p}, x_{\text{img}, c})
+$$
 
 (where β = 0.99, using EMA)
 - Prevents deterioration from noisy pseudo-labels.
