@@ -1,118 +1,99 @@
-# PANet-based Segmentation on Breast Ultrasound Images
+# PANet for Few-Shot Breast Tumor Segmentation (Ultrasound)
 
-This project is an experimental implementation of the **Pyramid Attention Network (PANet)** applied to the **BUS-UCLM breast ultrasound dataset** for tumor segmentation. The main objective was to explore how well a simplified PANet-style architecture can perform in low-data medical image segmentation tasks.
-
----
-
-## 🧠 What is PANet?
-
-**PANet** (Pyramid Attention Network) was originally designed for instance segmentation in natural images. It builds on top of FPN (Feature Pyramid Networks) and enhances both bottom-up and top-down pathways with:
-
-- **Adaptive Feature Pooling**
-- **Bottom-up Path Augmentation**
-- **Attention modules for better localization**
-- **Mask refinement branches**
-
-In this project, a **partial and simplified version** of PANet was implemented to test feasibility on medical data.
+This project explores the use of **PANet (Prototype Alignment Network)** for **few-shot medical image segmentation**, applied to breast ultrasound images from the **BUS-UCLM dataset**. It was an experimental attempt to understand how well PANet performs in medical imaging when only a few annotated samples are available for training.
 
 ---
 
-## 📦 Dataset Used
+## 🧠 What is PANet (Prototype Alignment Network)?
 
-- **Name**: BUS-UCLM (Breast Ultrasound Lesion Segmentation Dataset)
+**PANet** in the context of few-shot segmentation refers to **Prototype Alignment Network**, not Pyramid Attention Network.
+
+- Originally proposed in the paper:  
+  *"PANet: Few-Shot Image Segmentation with Prototype Alignment"*  
+  [https://arxiv.org/abs/2003.10061](https://arxiv.org/abs/2003.10061)
+
+### 🔍 Key Concepts:
+- Learns from **just a few support images and masks**
+- Generates **class prototypes** from support set features
+- Performs **prototype alignment and matching** with query image features
+- Trains using **episodic learning** format to mimic few-shot tasks
+
+---
+
+## 🗂️ Dataset
+
+- **Name**: BUS-UCLM (Breast Ultrasound Lesion Segmentation)
 - **Source**: Kaggle
-- **Contents**:
-  - Breast ultrasound images in `.png` format
-  - Corresponding binary segmentation masks
-
-The dataset was manually extracted, and paths were organized into two folders:
-- `images/` for input ultrasound scans
-- `masks/` for corresponding binary masks
+- **Used As**:
+  - **Support Set**: A few images + masks (1-shot or 5-shot)
+  - **Query Set**: Separate test samples for generalization
 
 ---
 
-## ⚙️ What Was Implemented
+## ⚙️ Implementation Summary
 
-This project implemented a **simplified PANet-like architecture**:
+### ✅ Data Preprocessing
+- Resized all images and masks to 256×256
+- Normalized to [0, 1] range
+- Created episodic batches: `(support_images, support_masks, query_images, query_masks)`
 
-### ✅ Data Pipeline
+### ✅ Model Structure (PANet)
 
-- Custom PyTorch `Dataset` class to load and preprocess images
-- Preprocessing:
-  - Resizing to 256x256
-  - Normalization to [0, 1]
-  - Optional tensor formatting for model input
+- **Encoder**: ResNet50 (pretrained)
+- **Support feature extractor**: Extracts features from few annotated examples
+- **Query feature extractor**: Encodes unannotated input
+- **Prototype computation**: Computes class prototype from support set
+- **Alignment module**: Compares query features with support prototype
+- **Decoder**: Outputs binary mask (foreground/background)
 
-### ✅ Model Architecture
+### ⚠️ Incomplete Aspects
 
-- Backbone: **ResNet-50** (pretrained on ImageNet)
-- Only the **top-down feature extraction** path from PANet was loosely retained
-- Final segmentation head: single 1×1 convolution followed by bilinear upsampling and sigmoid activation
-- No actual attention modules, pooling, or refinement branches were implemented
-
-### ⚠️ Limitations in PANet Implementation
-
-- ❌ No Bottom-up path augmentation
-- ❌ No Adaptive Feature Pooling
-- ❌ No explicit Attention mechanisms
-- ❌ No multi-scale feature fusion
-- ❌ No skip connections or lateral fusion from lower layers
-- ❌ No multi-branch mask refinement
+- ❌ The **alignment module** was not fully implemented
+- ❌ No attention refinement in support-query interaction
+- ❌ Prototype averaging was fixed, not learned
+- ❌ No proper meta-learning loop (fixed support/query batches)
+- ❌ Dice or IoU losses were missing; only BCE used
 
 ---
 
-## 🧪 Training Setup
+## 📉 Observations
 
-- Loss: **Binary Cross-Entropy**
-- Optimizer: **Adam**
-- Epochs: 200
-- Device: GPU (Colab T4)
-- Metrics like Dice or IoU were not used for validation
-
----
-
-## 📉 Observations and Failure Points
-
-- Training loss decreased very slowly and plateaued early
-- Final segmentation masks were **blurry and under-confident**
-- Model failed to **capture sharp tumor boundaries**
-- Partial PANet structure failed to leverage spatial hierarchies effectively
-- The network **over-relied on high-level ResNet features** and lacked multi-scale context
+- Loss curve shows high variance and poor convergence
+- Predictions remained around 0.4–0.5 confidence (weak masks)
+- Model failed to sharply distinguish tumors in query images
+- Suggests poor generalization from support to query
 
 ---
 
-## 🔧 What Could Be Improved
+## 🧪 Why the Model Failed
 
-1. ✅ Implement full PANet as proposed in the original paper:
-   - Add bottom-up path augmentation
-   - Integrate adaptive feature pooling
-   - Introduce spatial & channel-wise attention mechanisms
-   - Include mask refinement stages
-
-2. ✅ Add Dice and IoU metrics to guide learning
-
-3. ✅ Improve image augmentation and regularization
-
-4. ✅ Add skip connections for better spatial detail retention
-
-5. ✅ Try different loss functions (e.g., Dice, Focal)
-
-6. ✅ Consider using fewer ResNet layers to reduce overfitting on small data
+- The PANet architecture for few-shot segmentation **requires precise alignment and prototype fusion**, which was **not implemented** correctly
+- Query and support encoding was disconnected
+- Model did **not use episodic training correctly**, defeating the few-shot purpose
+- The few available training examples made the backbone overfit
 
 ---
 
-## 📌 Summary
+## 🔁 What Can Be Improved
 
-This project served as a foundational attempt to apply **PANet-style segmentation** to medical ultrasound images. While the current implementation is incomplete and underperforms, it provides the following:
-
-- ✅ A working dataset pipeline
-- ✅ Integration of pretrained ResNet features
-- ⚠️ A placeholder model that mimics the general direction of PANet
-- ❌ Lacks critical components of PANet that are essential for success
+| Area | Fix |
+|------|-----|
+| Alignment | Add cosine similarity-based alignment between support/query |
+| Prototypes | Use attention-weighted prototypes, not just global mean |
+| Decoder | Add spatial-aware decoder (skip connections, UNet-style) |
+| Loss | Combine Dice Loss + BCE for better mask learning |
+| Episodes | Dynamically sample few-shot episodes per iteration |
 
 ---
 
-## 📎 Final Verdict
+## ✅ Conclusion
 
-> The model does not currently perform well on BUS-UCLM and should **not** be considered production-ready. However, the work establishes a modular structure that can be iteratively improved into a full PANet implementation for medical segmentation tasks.
+This project attempted to explore **Prototype Alignment Networks (PANet)** for **few-shot breast tumor segmentation** on ultrasound images. While the model did not produce strong segmentation results, the pipeline built here can be upgraded into a correct few-shot learner by:
 
+- Fixing prototype alignment logic
+- Implementing proper episodic training
+- Adding attention-based refinement modules
+
+This base can serve as a starting point for more robust few-shot segmentation work in medical imaging.
+
+---
