@@ -75,8 +75,9 @@ $$
 - Corresponding pseudo-labels
 - Objective:
 
-`P_t = \beta \cdot P_{t-1} + (1 - \beta) \cdot P_t`
-
+$$
+P_t = \beta \cdot P_{t-1} + (1 - \beta) \cdot P_t
+$$
 
 ---
 
