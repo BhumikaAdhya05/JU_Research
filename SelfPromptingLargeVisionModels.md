@@ -155,3 +155,154 @@ Where:
   year={2024},
   publisher={Springer}
 }
+```
+
+# 🧠 Self-Prompting Large Vision Models for Few-Shot Medical Image Segmentation
+
+> A simplified and detailed explanation of the paper by Qi Wu, Yuyao Zhang, and Marawan Elbatel  
+> Presented at DART 2023 ([Paper Link](https://doi.org/10.1007/978-3-031-45857-6_16))
+
+---
+
+## 🚨 The Problem
+
+Medical image segmentation — like finding tumors in MRI or polyps in endoscopy — needs:
+- ✅ Highly accurate models
+- ❌ Lots of **manual annotations** by medical experts
+- ❌ Expensive labeling effort
+
+But what if we only have **a few labeled images** (few-shot)? How do we still make a model that segments well?
+
+---
+
+## 🧪 The Solution: Self-Prompting SAM
+
+### What's SAM?
+
+- SAM = **Segment Anything Model** from Meta AI
+- It’s trained on huge datasets of **natural images**
+- It can segment objects **if you give it prompts**, like:
+  - A **point** inside the object
+  - A **bounding box** around the object
+
+But here’s the issue:
+> SAM needs **good prompts** to work well. And in medical imaging, it’s hard to provide these manually for each new scan.
+
+### So what do the authors propose?
+
+> ✨ Train a tiny model to **generate those prompts** automatically — using just a few labeled images — and feed them to SAM.
+
+---
+
+## 🛠️ Step-by-Step: How It Works
+
+### 🔒 1. Freeze SAM
+
+- Don’t touch SAM’s internal parameters.
+- Use it **as-is**: image encoder + prompt encoder + mask decoder.
+
+---
+
+### 🧠 2. Add a Tiny Self-Prompting Module
+
+- Input an image into SAM’s ViT encoder → get **64×64×256** feature embeddings
+- Add a **simple logistic regression classifier** (just a linear layer!)
+  - It predicts: for each pixel, is it inside the object? (Yes = 1, No = 0)
+- This gives a **rough mask** — not perfect, but enough to hint where the object is.
+
+---
+
+### 🧾 3. Extract Prompts from the Rough Mask
+
+From the coarse binary mask:
+- 🟡 **Point Prompt**:
+  - Use **distance transform** to find the pixel farthest from the boundary (i.e. safely inside the object)
+- 🔲 **Box Prompt**:
+  - Find the smallest box that covers the mask
+  - Clean the mask with **morphological operations** (erosion + dilation)
+
+---
+
+### 🎯 4. Use Prompts with SAM
+
+- Combine the **point** and **box** with the original image
+- Feed these into SAM's **mask decoder**
+- 🧠 SAM uses its pre-trained power to generate a **precise segmentation mask**
+
+---
+
+## 🤖 What Makes This Special?
+
+### ✅ Works with Very Little Data
+
+- Only needs **10–20 labeled images** to perform well
+- No need to train or fine-tune the big SAM model
+
+### ✅ Ultra-Lightweight
+
+- The classifier is just a **single linear layer**
+- Whole training takes **<30 seconds on a GPU**, or a few seconds on CPU!
+
+### ✅ Beats Other Fine-Tuning Methods in Few-Shot Settings
+
+- Performs better than MedSAM and SAMed when both use the same small dataset
+- Without touching SAM’s weights at all
+
+---
+
+## 📊 Performance Summary (20-shot setting)
+
+| Model               | Kvasir Dice | ISIC Dice |
+|--------------------|-------------|------------|
+| Ours (point + box) | **62.78%**  | **66.78%** |
+| MedSAM             | 55.01%      | 64.94%     |
+| SAMed              | 61.48%      | 63.27%     |
+| SAM (no prompts)   | 52.66%      | 45.25%     |
+| Full-data U-Net    | 88.10%      | 88.36%     |
+
+---
+
+## 🔬 Why This Works (Intuitively)
+
+> Think of the model as two brains working together:
+
+### 🧠 Brain 1: "Rough Estimator" (the self-prompt module)
+
+- Learns **basic shape and location** of the object from just a few images
+- Not perfect, but cheap and fast
+
+### 🧠 Brain 2: "Expert Segmenter" (SAM)
+
+- Given a decent prompt (box + point), it uses its **deep knowledge from millions of natural images** to do the real work
+
+**Result:** High-quality segmentation using very little training data.
+
+---
+
+## ⚖️ Limitations
+
+- ❌ Doesn’t handle **multiple objects** in one image well
+- ❌ Struggles with **noisy modalities** like ultrasound
+- ❌ SAM's decoder isn't trained for medical data — can still be a bottleneck
+
+---
+
+## 💡 Future Improvements
+
+- Combine with **modality-tuned decoders** for better accuracy
+- Replace linear classifier with a **lightweight CNN**
+- Improve **multi-instance prompting**
+- Explore **iterative refinement**: better prompts → better masks → better prompts...
+
+---
+
+## 🧠 Summary: What You Should Remember
+
+- You can use a **frozen giant model** (SAM) and teach a **tiny helper** to give it rough instructions
+- This works surprisingly well — even in **few-shot settings**
+- Self-prompting turns **coarse predictions** into **high-quality segmentations**
+- It’s **simple**, **fast**, and **effective** for real-world medical scenarios
+
+---
+
+
