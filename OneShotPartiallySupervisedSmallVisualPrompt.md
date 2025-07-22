@@ -176,3 +176,136 @@ SVP/
 ├── inference.py         # One-shot evaluation
 └── README.md            # This file
 ```
+
+# 🧬 One-Shot and Partially-Supervised Cell Image Segmentation Using Small Visual Prompt
+
+**Conference**: CVPR 2024  
+**Authors**: Masahiro Kato (The University of Tokyo), Tomoya Sato (NEC Corporation)  
+**Paper**: [Link to paper](https://openaccess.thecvf.com/content/CVPR2024/html/Kato_One-Shot_and_Partially-Supervised_Cell_Image_Segmentation_Using_Small_Visual_CVPR_2024_paper.html)
+
+---
+
+## 🧠 What’s the Paper About?
+
+This paper introduces a very simple idea for segmenting cells in microscope images:
+
+> Show the model a **tiny 64×64 patch** of what the target cell looks like (called a **Small Visual Prompt**) and let it find similar cells in a new image.
+
+No text. No CLIP. No big models. Just a **small image crop** as the prompt.
+
+---
+
+## 🧩 Why Is This Needed?
+
+- Labeling biological data is **expensive and slow**.
+- Sometimes you only have **one or two labeled examples** of a cell type.
+- Most few-shot methods are **complex**, need **pretraining**, or fail on **small objects**.
+
+This method:
+- Uses just **one small patch** (64×64) from a labeled image.
+- Trains a **small CNN from scratch**.
+- Works well even on **completely unseen cell types**.
+
+---
+
+## 🛠️ How It Works (Simplified)
+
+### Input:
+- **Query Image**: The image you want to segment.
+- **Prompt Patch**: A 64×64 crop from a labeled image showing the target cell(s).
+
+### Model Steps:
+1. Extract features from the query image and the patch.
+2. Concatenate both.
+3. Decode into a segmentation map.
+
+### During Inference:
+- You just give it a prompt + query image — no labels needed.
+
+---
+
+## 🔬 Dataset: LIVECell
+
+- Large-scale cell segmentation dataset.
+- 8 total cell lines.
+  - Train on 5 (base classes).
+  - Test on 3 unseen ones (novel classes).
+- Only 1 image used per class during test (1-shot setting).
+
+---
+
+## 📊 Results (1-Shot on Novel Classes)
+
+| Method              | mIoU (%) | F1 Score | AP (%) |
+|---------------------|----------|----------|--------|
+| CLIP-Adapter        | 13.5     | 31.0     | 16.8   |
+| SAM + Prompt        | 22.8     | 42.4     | 27.5   |
+| Feature Matching    | 24.2     | 44.9     | 30.7   |
+| Prompt-only CNN     | 29.1     | 48.6     | 34.8   |
+| **Small Visual Prompt (Ours)** | **42.5** | **60.1** | **49.7** |
+
+> ✅ Best performance — without needing any pretrained model!
+
+---
+
+## 📈 Why Does It Work?
+
+- Cells in the same class usually have similar **local shape and texture**.
+- A small patch can capture enough of that.
+- Visual prompting is **cleaner and simpler** than using global features, text, or segmentation masks.
+
+---
+
+## ⚙️ Architecture
+
+- Lightweight **CNN encoder-decoder**.
+- No ViTs, no transformers.
+- Shared encoder for both query and prompt image.
+- Uses **Dice + Binary Cross Entropy Loss**.
+
+---
+
+## 🧪 Ablation: Size of Prompt Matters
+
+| Prompt Patch Size | mIoU (%) |
+|-------------------|----------|
+| No Prompt         | 19.3     |
+| Full Image        | 31.5     |
+| 128×128           | 39.7     |
+| **64×64**         | **42.5** |
+
+> ✅ Tiny crops are **just right** — small, focused, and efficient.
+
+---
+
+## 🧠 Summary of Advantages
+
+| Feature              | Benefit                              |
+|----------------------|---------------------------------------|
+| No pretraining       | Trains from scratch                   |
+| Small patch prompt   | Simple and efficient                  |
+| Works with 1-shot    | Great for low-label environments      |
+| Outperforms CLIP/SAM | Especially on small biomedical objects|
+
+---
+
+## 💡 Want to Extend?
+
+This method also supports:
+- **Multi-shot prompting** (use multiple patches).
+- **Visual attention** for selecting helpful prompts.
+- Few-label semi-supervised training.
+
+---
+
+## 📁 Suggested Repo Structure
+
+```bash
+SVP-CellSeg/
+├── models/           # CNN-based encoder-decoder
+├── data/             # LIVECell loader
+├── utils/            # Prompt extraction tools
+├── train.py          # Base class training
+├── eval_one_shot.py  # 1-shot evaluation script
+└── README.md         # This file
+```
