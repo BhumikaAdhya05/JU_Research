@@ -210,4 +210,96 @@ Key prior works cited:
 
 ---
 
-*This markdown is structured for GitHub rendering. Paste into your README or documentation directly.*
+# 🧠 Prompting Classes: POLE (WACV 2024) – Simple Explanation
+
+**Paper**: Prompting Classes: Exploring the Power of Prompt Class Learning in Weakly Supervised Semantic Segmentation  
+**Authors**: Balamurali Murugesan*, Rukhshanda Hussain*, Rajarshi Bhattacharya*, Ismail Ben Ayed, Jose Dolz  
+**Institution**: ETS Montreal, Jadavpur University  
+**Code**: [https://github.com/Ruxie189/WSS_POLE](https://github.com/Ruxie189/WSS_POLE)
+
+---
+
+## 🚀 What’s This Paper About?
+
+The paper presents a simple idea:  
+> You can improve image segmentation by just choosing a better word for the object in your prompt.
+
+Instead of saying “A photo of a **dog**”, what if you said “A photo of a **puppy**”?  
+Sometimes, that small change makes the model work much better.
+
+This method is called **POLE** (Prompt Class Learning), and it improves results without changing the model or adding extra data.
+
+---
+
+## 🧩 Problem: Weak Supervision
+
+**Goal**: Identify each object in an image (pixel-wise) using only image-level tags like “dog” or “car”.
+
+**Common approach**:
+- Train an image classifier.
+- Use Class Activation Maps (CAMs) to find object areas.
+- CAMs often highlight only the most distinctive parts, not the whole object.
+
+---
+
+## 💡 Main Idea: Pick a Better Class Word
+
+### Instead of:
+
+
+- Use CLIP to test which synonym fits the image best.
+- Use that synonym to get better object maps (CAMs).
+
+---
+
+## 🔧 How POLE Works
+
+1. Start with an image labeled “dog”.
+2. Get synonyms like: `["puppy", "canine", "pet"]`.
+3. Use CLIP to compare how well each word matches the image.
+4. Pick the best one (`CLS*`) and use it to get CAM.
+5. Use this CAM to train the segmentation model.
+
+Optional: Use small neural networks (called adapters) to fine-tune the image and text features.
+
+---
+
+## 🧪 Experiments on PASCAL VOC 2012
+
+### Dataset:
+- 20 object categories.
+- Only image-level labels used (no masks).
+- Evaluation metric: mIoU (mean Intersection over Union).
+
+### Results:
+
+| Method         | mIoU (Val) | mIoU (Test) |
+|----------------|------------|-------------|
+| ReCAM          | 67.3       | 67.9        |
+| CLIMS (CLIP-based) | 70.5   | 71.3        |
+| **POLE (Ours)**| **74.2**   | **75.1**    |
+
+✔️ POLE achieves the **best results** with a simple change: choosing better prompt words.
+
+---
+
+## 🔬 Why It Works
+
+- Words like “bottle” can be vague.
+- Synonyms like “wine bottle” are more visually specific.
+- CLIP is better at aligning detailed words with image content.
+- So CAMs generated with better class words are more complete.
+
+---
+
+## 🧪 Ablation Study
+
+| Setting                   | mIoU (%) |
+|---------------------------|----------|
+| Ground truth label        | 70.5     |
+| Best matching synonym     | 73.6     |
+| With adapters (MLPs)      | 74.2     |
+
+---
+
+
