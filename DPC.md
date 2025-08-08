@@ -1,84 +1,84 @@
-DPC: Dual-Prompt Collaboration for Tuning Vision-Language Models
-Authors: Haoyang Li, Liang Wang, Chao Wang*, Jing Jiang, Yan Peng*, Guodong Long*
-(* denotes corresponding authors)
-Institutions: Shanghai University, University of Technology Sydney
-Paper: CVPR 2025
+# DPC: Dual-Prompt Collaboration for Tuning Vision-Language Models
 
-📌 Overview
-This repository contains the implementation of DPC — Dual-Prompt Collaboration, a plug-and-play framework designed to solve the Base-New Trade-off (BNT) problem in CLIP-based prompt tuning.
+**Authors:** Haoyang Li, Liang Wang, Chao Wang*, Jing Jiang, Yan Peng*, Guodong Long*  
+(* denotes corresponding authors)  
+**Institutions:** Shanghai University, University of Technology Sydney  
+**Paper:** [CVPR 2025](https://github.com/JREion/DPC)  
 
-BNT Problem: When fine-tuning on base (training) classes, the model often overfits and loses performance on new (unseen) classes.
+---
 
-🔍 What’s New in DPC?
-Prompt-Level Decoupling: Instead of optimizing one prompt for both base and new tasks, DPC creates two separate prompts:
+## 📌 Overview
 
-Tuned Prompt → Keeps generalization for new classes.
+This repository contains the implementation of **DPC** — **Dual-Prompt Collaboration**, a plug-and-play framework designed to solve the **Base-New Trade-off (BNT)** problem in CLIP-based prompt tuning.
 
-Parallel Prompt → Specially optimized for base classes.
+> **BNT Problem**: When fine-tuning on base (training) classes, the model often overfits and loses performance on new (unseen) classes.
 
-Weighting-Decoupling: Dynamically control how much each prompt influences predictions.
+### 🔍 What’s New in DPC?
+- **Prompt-Level Decoupling**: Two separate prompts:
+  - **Tuned Prompt (P)** → Maintains generalization for new classes.
+  - **Parallel Prompt (P′)** → Optimized for base classes.
+- **Weighting-Decoupling Module**: Dynamically controls each prompt’s influence.
+- **Dynamic Hard Negative Optimizer (DHNO)**: Creates harder examples for stronger base class learning.
+- **Feature Channel Invariance**: Keeps feature distribution stable during optimization.
 
-Dynamic Hard Negative Optimizer (DHNO): Generates hard examples for stronger base class learning.
+---
 
-Feature Channel Invariance: The model keeps the feature space stable during optimization.
+## 📚 Abstract (Simplified)
 
-📚 Abstract (Simplified)
-In CLIP-based prompt tuning, focusing on base classes improves performance there but hurts new class generalization (BNT problem).
-Existing methods try to balance this with constraints but still optimize the same prompt for both tasks — leading to conflicts.
+In CLIP-based prompt tuning, focusing too much on base classes hurts generalization to new classes — the **BNT problem**.  
+Existing methods try to balance this using the **same prompt** for both tasks, causing conflicting optimization directions.
 
-DPC solves this by:
+**DPC** solves this by:
+1. **Duplicating the prompt** into two: one frozen for generalization, one optimized for base tasks.
+2. Using **Weighting-Decoupling** to adjust their influence independently.
+3. Applying a **Dynamic Hard Negative Optimizer** to strengthen base class learning.
 
-Duplicating the prompt into two: one for base classes, one for new classes.
+**Result:** Better base performance **without sacrificing** new class generalization — and no external data required.
 
-Using Weighting-Decoupling to control their influence independently.
+---
 
-Applying a Dynamic Hard Negative Optimizer to push the base-class prompt harder.
+## 🏗 Architecture
 
-The result?
-Better base performance without sacrificing new class generalization — and no external data needed.
+### Existing Prompt Tuning
+One prompt → Optimized for both base and new → Conflicting gradients → BNT problem.
 
-🏗 Architecture
-Existing Prompt Tuning
-sql
+shell
 Copy
 Edit
-One prompt → Optimized for both base and new tasks → Conflicting gradients → BNT problem.
-DPC Approach
-csharp
-Copy
-Edit
-Tuned Prompt (P) → frozen for new class generalization
-Parallel Prompt (P′) → trained for base class performance
-Weighting-Decoupling → balances them
+
+### DPC Approach
+Tuned Prompt (P) → frozen for new classes
+Parallel Prompt (P′) → optimized for base classes
+Weighting-Decoupling → balances them during inference
 Dynamic Hard Negative Optimizer → pushes P′ harder
-Figure 1 – Side-by-side comparison:
-(a) Single prompt optimization (existing methods) vs. (b) DPC's dual prompt decoupling.
 
-⚙️ Method
-1️⃣ Dual Prompt Initialization
-Start with a pretrained backbone (e.g., CoOp, MaPLe, PromptSRC, PromptKD).
-
-Fine-tune to get Tuned Prompt P.
-
-Clone it to create Parallel Prompt P′ for base class optimization.
-
-python
+yaml
 Copy
 Edit
+
+---
+
+## ⚙️ Method
+
+### 1️⃣ Dual Prompt Initialization
+- Fine-tune the backbone prompt learner to get **Tuned Prompt P**.
+- Clone it into **Parallel Prompt P′** for base-specific optimization.
+
+```python
 P_prime = P.clone()
 2️⃣ Dynamic Hard Negative Optimizer (DHNO)
-Goal: Make base class optimization harder → stronger performance.
+Goal: Make the base prompt’s job harder → better learning.
 
 Steps:
 
-Negative Sampler – Use tuned prompt P to find top-K most similar (but wrong) predictions for each image in base classes.
+Negative Sampler – Use P to get top-K most similar wrong predictions for each base image.
 
-Feature Filtering – Keep feature distribution stable via L2 normalization before optimization.
+Feature Filtering – L2 normalize text features to keep the original distribution stable.
 
-Hard Negative Optimizing – Apply symmetric InfoNCE loss for contrastive learning.
+Hard Negative Optimizing – Train with symmetric InfoNCE contrastive loss.
 
 3️⃣ Weighting-Decoupling Module (WDM)
-Purpose: Control prompt influence during inference.
+Purpose: Control influence of each prompt in inference.
 
 Base classes:
 
@@ -92,22 +92,22 @@ Edit
 P̃_n = ω_n * P′ + (1 - ω_n) * P
 Where:
 
-ω_b = weight for base prompt (typically 0.2)
+ω_b = base prompt weight (best ≈ 0.2)
 
-ω_n = weight for new prompt (close to 0)
+ω_n = new prompt weight (best ≈ 1e-6)
 
 📊 Experiments
 Datasets
-Base-to-New Generalization: ImageNet, Caltech101, OxfordPets, StanfordCars, Flowers102, Food101, FGVCAircraft, SUN397, DTD, EuroSAT, UCF101.
+Base-to-New: ImageNet, Caltech101, OxfordPets, StanfordCars, Flowers102, Food101, FGVCAircraft, SUN397, DTD, EuroSAT, UCF101.
 
-Cross-Dataset / Cross-Domain: ImageNet-V2, ImageNet-Sketch, ImageNet-A, ImageNet-R.
+Cross-Domain: ImageNet-V2, ImageNet-Sketch, ImageNet-A, ImageNet-R.
 
-Results (Highlights)
-On 11 datasets, DPC improved base class accuracy in all backbones without harming new class performance.
+Results
+On 11 datasets, DPC improved base accuracy in all backbones without harming new-class performance.
 
-Achieved state-of-the-art Harmonic Mean (H) scores.
+Achieved SOTA harmonic mean (H) scores.
 
-Outperformed another plug-and-play method DePT.
+Outperformed DePT, another plug-and-play method.
 
 🔬 Ablation Studies
 Component	Base ↑	New	H ↑
@@ -116,18 +116,18 @@ Baseline (CoOp)	81.98	68.84	74.84
 + DHNO	84.28	64.12	72.83
 + Weighting-Decoupling	85.15	68.84	76.13
 
-Key findings:
+Key Takeaways:
 
-Both DHNO and WDM are crucial.
+Both DHNO and WDM are necessary.
 
-ω_b = 0.2, ω_n ≈ 0 give best balance.
+Prompt-level decoupling avoids BNT entirely.
 
-Even with fewer epochs, DPC outperforms baselines.
+Still works well with fewer fine-tuning epochs.
 
 🧠 Why It Works
-Feature Channel Invariance: DPC’s feature filtering ensures the new prompt’s feature distribution is preserved, so new-class performance doesn’t degrade.
+Feature Channel Invariance: Feature filtering ensures the generalization prompt’s distribution is unchanged.
 
-Prompt-Level Decoupling: Avoids conflicting gradient updates that cause BNT.
+Prompt-Level Decoupling: Eliminates gradient conflicts that hurt new-class performance.
 
 🚀 Usage
 bash
@@ -142,27 +142,18 @@ pip install -r requirements.txt
 
 # Train with DPC on CoOp backbone
 python train_dpc.py --backbone coop --dataset imagenet --omega_b 0.2 --omega_n 1e-6 --top_k 8
-📌 Citation
-bibtex
-Copy
-Edit
-@inproceedings{li2025dpc,
-  title={DPC: Dual-Prompt Collaboration for Tuning Vision-Language Models},
-  author={Li, Haoyang and Wang, Liang and Wang, Chao and Jiang, Jing and Peng, Yan and Long, Guodong},
-  booktitle={CVPR},
-  year={2025}
-}
-📝 Explanation in Plain Language
-Think of prompts like “instructions” given to CLIP.
-Old methods wrote one instruction and kept editing it to be good at both the exam you practiced for (base classes) and surprise questions (new classes). This caused problems: improving one part made the other worse.
+📝 Plain Language Summary
+Think of prompts like instructions given to CLIP.
+Old methods used one instruction for both the exam you practiced for (base classes) and surprise questions (new classes). Editing it for one hurt the other.
 
-DPC says: “Why not have two separate instructions?”
+DPC’s idea:
 
-One focuses on the practiced questions (base) → trained aggressively.
+Two separate instructions:
 
-One stays safe for surprise questions (new) → frozen.
+One for base → trained aggressively.
 
-The Weighting-Decoupling module decides how much each “instruction” should count when answering.
+One for new → kept safe.
 
-And the Hard Negative Optimizer is like a coach that gives you trickier practice questions so you get even better on the base exam.
+Weighting-Decoupling decides how much each counts.
 
+Hard Negative Optimizer is like a coach giving trickier practice questions.
